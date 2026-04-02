@@ -5,57 +5,63 @@ from openai import OpenAI
 
 app = FastAPI()
 
-VERIFY_TOKEN = os.getenv(VERIFY_TOKEN)
-ACCESS_TOKEN = os.getenv(ACCESS_TOKEN)
-PHONE_NUMBER_ID = os.getenv(PHONE_NUMBER_ID)
+# ENV değişkenleri
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 
-client = OpenAI(api_key=os.getenv(OPENAI_API_KEY))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-@app.get(webhook)
-def verify(mode str = , challenge str = , verify_token str = )
-    if verify_token == VERIFY_TOKEN
+# ✅ ANA SAYFA (Render için gerekli)
+@app.get("/")
+def home():
+    return {"status": "bot çalışıyor"}
+
+# ✅ Webhook doğrulama
+@app.get("/webhook")
+def verify(mode: str = "", challenge: str = "", verify_token: str = ""):
+    if verify_token == VERIFY_TOKEN:
         return int(challenge)
-    return Hata
+    return "Hata"
 
-@app.post(webhook)
-async def receive_message(req Request)
+# ✅ Mesaj yakalama
+@app.post("/webhook")
+async def receive_message(req: Request):
     data = await req.json()
 
-    try
-        message = data[entry][0][changes][0][value][messages][0][text][body]
-        from_number = data[entry][0][changes][0][value][messages][0][from]
+    try:
+        message = data["entry"][0]["changes"][0]["value"]["messages"][0]["text"]["body"]
+        from_number = data["entry"][0]["changes"][0]["value"]["messages"][0]["from"]
 
-        cevap = ai_cevap(message)
+        # Şimdilik sabit cevap (AI sonra ekleyeceğiz)
+        cevap = "Merhaba 👋 Ulu Resort Hotel'e hoş geldiniz. Size nasıl yardımcı olabilirim?"
+
         send_message(from_number, cevap)
 
-    except Exception as e
-        print(Hata, e)
+    except Exception as e:
+        print("Hata:", e)
 
-    return {status ok}
+    return {"status": "ok"}
 
-def ai_cevap(message)
-    response = client.chat.completions.create(
-        model=gpt-5-mini,
-        messages=[
-            {role system, content Sen Ulu Resort Hotel müşteri temsilcisisin. Kısa ve net Türkçe cevap ver.},
-            {role user, content message}
-        ]
-    )
-    return response.choices[0].message.content
+# ✅ WhatsApp mesaj gönderme
+def send_message(to, text):
+    if not ACCESS_TOKEN or not PHONE_NUMBER_ID:
+        print("Token veya Phone ID eksik")
+        return
 
-def send_message(to, text)
-    url = fhttpsgraph.facebook.comv18.0{PHONE_NUMBER_ID}messages
+    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
-        Authorization fBearer {ACCESS_TOKEN},
-        Content-Type applicationjson
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json"
     }
 
     data = {
-        messaging_product whatsapp,
-        to to,
-        type text,
-        text {body text}
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {"body": text}
     }
 
-    requests.post(url, headers=headers, json=data)
+    response = requests.post(url, headers=headers, json=data)
+    print(response.text)
